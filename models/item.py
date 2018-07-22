@@ -1,34 +1,44 @@
 from db import db
+import datetime
+
 
 class ItemModel(db.Model):
-    __tablename__ = 'itemsdata'
+    __tablename__ = 'items'
 
     id = db.Column(db.Integer, primary_key=True)
+    dateandtime =db.Column(db.String(100))
+
     name = db.Column(db.String(80))
     price = db.Column(db.Float(precision=2))
 
-    sitename = db.Column(db.Integer, db.ForeignKey('sitesdata.sitename'))
-    site = db.relationship('SiteModel')
+    store_id = db.Column(db.Integer, db.ForeignKey('stores.id'))
+    store = db.relationship('StoreModel')
 
-    def __init__(self, name, price, sitename):
+    def __init__(self,name,dateandtime, price, store_id):
+        self.dateandtime = format(datetime.datetime.now().strftime("%B %d, %Y %H:%M"))
         self.name = name
         self.price = price
-        self.sitename = sitename
+        self.store_id = store_id
+        print (self.dateandtime)
 
     def json(self):
-        return {'ITEMNAME': self.name, 'price': self.price}
+        return {'Name': self.name, 'Date&Time':self.dateandtime,'Price': self.price,'Store_ID' :self.store_id}
+
+    def get_date(cls):
+        return format(datetime.datetime.now().strftime("%B %d, %Y %H:%M"))
+
 
     @classmethod
-    def find_by_site_name(cls,sitename):
-        return cls.query.filter_by(sitename=sitename).first()
-
-    @classmethod
-    def find_by_itemname_sitename(cls,name,sitename):
-        return cls.query.filter_by(name=name,sitename=sitename).first()
+    def find_by_store_id(cls, store_id):
+        return cls.query.filter_by(store_id=store_id).first()
 
     @classmethod
     def find_by_name(cls, name):
         return cls.query.filter_by(name=name).first()
+
+    @classmethod
+    def find_by_itemname_storeID(cls,name,store_id):
+        return cls.query.filter_by(name=name,store_id=store_id).first()
 
     def save_to_db(self):
         db.session.add(self)

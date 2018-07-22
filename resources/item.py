@@ -4,59 +4,65 @@ from models.item import ItemModel
 
 class Item(Resource):
     parser = reqparse.RequestParser()
+    parser.add_argument('dateandtime',
+        type=str,
+        required=False,
+        help="This field cannot be left blank!"
+    )
     parser.add_argument('price',
         type=float,
         required=False,
         help="This field cannot be left blank!"
     )
-    parser.add_argument('sitename',
-        type=str,
-        required=True,
-        help="Every item needs a sitename."
+    parser.add_argument('store_id',
+        type=int,
+        required=False,
+        help="Every item needs a store_id."
     )
 
     @jwt_required()
-    def get(self, name):
-        item = ItemModel.find_by_name(name)
+    def get(self,name,store_id):
+        #data = Item.parser.parse_args()
+        #print (data['store_id'])
+        item = ItemModel.find_by_itemname_storeID(name,store_id)
         if item:
             return item.json()
+            #return [x.json() for x in self.item.all()]
         return {'message': 'Item not found'}, 404
 
     def post(self, name):
         data = Item.parser.parse_args()
-        if ItemModel.find_by_itemname_sitename(name,data['sitename']):
-            return {'message': "An item with name '{}' already exists on site.".format(name)}, 400
+        if ItemModel.find_by_itemname_storeID(name,data['store_id']):
+            return {'message': "An item with name '{}' already exists.".format(name)}, 400
 
-        #data = Item.parser.parse_args()
-
-        item = ItemModel(name, data['price'], data['sitename'])
+        item = ItemModel(name,data['dateandtime'],data['price'], data['store_id'])
 
         try:
             item.save_to_db()
         except:
-            return {"message": "An error occurred inserting the {} item.".format(name)}, 500
+            return {"message": "An error occurred inserting the item."}, 500
 
         return item.json(), 201
 
     def delete(self, name):
         data = Item.parser.parse_args()
-        item = ItemModel.find_by_itemname_sitename(name,data['sitename'])
-        if item :
+        item = ItemModel.find_by_itemname_storeID(name,data['store_id'])
+        if item:
             item.delete_from_db()
 
-        return {'message': "Item {} deleted".format(name)}
+        return {'message': 'Item deleted'}
 
     def put(self, name):
         data = Item.parser.parse_args()
 
-        #item = ItemModel.find_by_name(name)
-        item = ItemModel.find_by_itemname_sitename(name,data['sitename'])
+        item = ItemModel.find_by_itemname_storeID(name,data['store_id'])
 
-        #if ItemModel.find_by_store_itemname_storename(name,data['store_name']):
         if item:
             item.price = data['price']
+            item.dateandtime  = data['dateandtime']
+
         else:
-            item = ItemModel(name, data['price'],data['sitename'])
+            item = ItemModel(name, data['dateandtime'],data['price'],data['store_id'])
 
         item.save_to_db()
 
@@ -64,4 +70,4 @@ class Item(Resource):
 
 class ItemList(Resource):
     def get(self):
-        return {'ItemList': list(map(lambda x: x.json(), ItemModel.query.all()))}
+        return {'Items': list(map(lambda x: x.json(), ItemModel.query.all()))}
